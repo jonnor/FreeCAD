@@ -193,9 +193,11 @@ class ImageWorkbench ( Workbench ):
 
 	def Initialize(self):
 		import ImageGui # load C++ module
+		import ImageTools
 		commandslist = [
 			'Image_Open',
 			'Image_CreateImagePlane',
+			'Image_Scale_Reference',
 			#"Image_CapturerTest", # if OpenCV2
 		]
 		self.appendToolbar('Image', commandslist)

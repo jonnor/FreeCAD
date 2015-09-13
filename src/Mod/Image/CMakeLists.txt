@@ -8,6 +8,7 @@ INSTALL(
     FILES
         Init.py
         InitGui.py
+        ImageTools.py
     DESTINATION
         Mod/Image
 )
