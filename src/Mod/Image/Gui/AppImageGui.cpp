@@ -18,7 +18,6 @@
 #include <Base/Console.h>
 #include <Gui/Application.h>
 #include <Gui/Language/Translator.h>
-#include "Workbench.h"
 #include "ViewProviderImagePlane.h"
 
 // use a different name to CreateCommand()
@@ -51,7 +50,8 @@ void ImageGuiExport initImageGui()
     CreateImageCommands();
 
     ImageGui::ViewProviderImagePlane::init();
-    ImageGui::Workbench::init();
+
+    // workbench is setup in from InitGui.py
 
     // add resources and reloads the translators
     loadImageResource();

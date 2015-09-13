@@ -60,8 +60,6 @@ SET(ImageGui_SRCS
     ImageView.h
     PreCompiled.cpp
     PreCompiled.h
-    Workbench.cpp
-    Workbench.h
     XpmImages.h
 )
 

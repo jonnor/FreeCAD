@@ -192,10 +192,14 @@ class ImageWorkbench ( Workbench ):
 	ToolTip = "Image workbench"
 
 	def Initialize(self):
-		# load the module
-		import ImageGui
-	def GetClassName(self):
-		return "ImageGui::Workbench"
+		import ImageGui # load C++ module
+		commandslist = [
+			'Image_Open',
+			'Image_CreateImagePlane',
+			#"Image_CapturerTest", # if OpenCV2
+		]
+		self.appendToolbar('Image', commandslist)
+		self.appendMenu('Image', commandslist)
 
 Gui.addWorkbench(ImageWorkbench())
 
