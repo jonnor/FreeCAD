@@ -1,5 +1,7 @@
 #***************************************************************************
-#*   (c) sliptonic (shopinthewoods@gmail.com) 2014                        *
+#*   (c) Jon Nordby (jononor@gmail.com) 2016                               *
+#*   Based on linuxcnc_post.py by                                          *
+#*   (c) sliptonic (shopinthewoods@gmail.com) 2014                         *
 #*                                                                         *
 #*   This file is part of the FreeCAD CAx development system.              *
 #*                                                                         *
@@ -23,15 +25,15 @@
 
 
 '''
-This is a postprocessor file for the Path workbench. It is used to
-take a pseudo-gcode fragment outputted by a Path object, and output
-real GCode suitable for a linuxcnc 3 axis mill. This postprocessor, once placed 
-in the appropriate PathScripts folder, can be used directly from inside FreeCAD,
-via the GUI importer or via python scripts with:
-
-import linuxcnc_post
-linuxcnc_post.export(object,"/path/to/file.ncc")
+This is a postprocessor file for the Path workbench.
+It takes pseudo-gcode fragments outputted by a Path object,
+and output real GCode suitable for use with a Shopbot.
 '''
+
+# For testing with standard FreeCAD, using this file from git
+# import sys
+# sys.path.append('/home/jon/contrib/code/freecad/Mod/Path/PathScripts/')
+# import shopbotgcode_post; reload(shopbotgcode_post)
 
 import datetime
 now = datetime.datetime.now()
@@ -41,25 +43,25 @@ from PathScripts import PostUtils
 OUTPUT_COMMENTS = True
 OUTPUT_HEADER = True
 OUTPUT_LINE_NUMBERS = False
-SHOW_EDITOR = True
+SHOW_EDITOR = False
 MODAL = False #if true commands are suppressed if the same as previous line.
 COMMAND_SPACE = " "
 LINENR = 100 #line number starting value
+REV = "0.0.2"
 
 #These globals will be reflected in the Machine configuration of the project
 UNITS = "G21" #G21 for metric, G20 for us standard
-MACHINE_NAME = "Millstone"
-CORNER_MIN = {'x':0, 'y':0, 'z':0 }
-CORNER_MAX = {'x':500, 'y':300, 'z':300 }
 
 #Preamble text will appear at the beginning of the GCODE output file.
-PREAMBLE = '''G17 G90
+PREAMBLE = '''G17
+G91
 '''
 
 #Postamble text will appear following the last operation.
-POSTAMBLE = '''M05
-G00 X-1.0 Y1.0
-G17 G90
+POSTAMBLE = '''
+G00 X0.0 Y0.0
+G17
+G91
 M2
 '''
 
@@ -79,7 +81,7 @@ if open.__module__ == '__builtin__':
     pythonopen = open
 
 
-def export(objectslist,filename):
+def export(objectslist, filename):
     global UNITS
     for obj in objectslist:
         if not hasattr(obj,"Path"):
@@ -109,7 +111,7 @@ def export(objectslist,filename):
     # write header
     if OUTPUT_HEADER:
         gcode += linenumber() + "(Exported by FreeCAD)\n"
-        gcode += linenumber() + "(Post Processor: " + __name__ +")\n"
+        gcode += linenumber() + "(Post Processor: %s %s)\n" % (__name__, REV)
         gcode += linenumber() + "(Output Time:"+str(now)+")\n"
     
     #Write the preamble 
@@ -148,12 +150,11 @@ def export(objectslist,filename):
             final = gcode
     else:
         final = gcode
-      
-    print "done postprocessing."
- 
+
     gfile = pythonopen(filename,"wb")
     gfile.write(gcode)
     gfile.close()
+    print "%s done postprocessing %s" % (REV, filename)
 
 
 def linenumber():
@@ -207,9 +208,27 @@ def parse(pathobj):
 
             # Check for Tool Change: 
             if command == 'M6':
-                if OUTPUT_COMMENTS: out += linenumber() + "(begin toolchange)\n" 
-                for line in TOOL_CHANGE.splitlines(True):
-                    out += linenumber() + line
+                outstring.pop(0) #remove the original command
+                outstring.pop(0) # remove parm
+                if OUTPUT_COMMENTS: out += linenumber() + "(toolchange ignored)\n"
+
+            # Spindle control
+            if command == 'M3' or command == 'M5':
+                outstring.pop(0) #remove the original command
+                speed = c.Parameters.get('S')
+                if speed:
+                    outstring.pop(0) # remove parm
+                    if OUTPUT_COMMENTS: out += "(set spindle speed)\n"
+                    out += linenumber() + "TR,%d,1\n" % (int(speed))
+
+                if command == 'M5':
+                    if OUTPUT_COMMENTS: out += "(turn spindle off)\n"
+                    out += linenumber() + "SO,1,0\n"
+                else:
+                    if OUTPUT_COMMENTS: out += "(turn spindle on)\n"
+                    out += linenumber() + "SO,1,1\n"
+                    out += linenumber() + "PAUSE 1\n" # Needed for Shopbot control software to wait reliably
+
 
             if command == "message":
                 if OUTPUT_COMMENTS == False:
@@ -230,5 +249,5 @@ def parse(pathobj):
         return out
    
     
-print __name__ + " gcode postprocessor loaded."
+print __name__ + " postprocessor loaded."
 
