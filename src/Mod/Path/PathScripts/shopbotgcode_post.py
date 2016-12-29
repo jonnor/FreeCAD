@@ -254,10 +254,26 @@ def parse(pathobj):
 
             # Check for Tool Change:
             if command == 'M6':
-                # if OUTPUT_COMMENTS:
-                #     out += linenumber() + "(begin toolchange)\n"
-                for line in TOOL_CHANGE.splitlines(True):
-                    out += linenumber() + line
+                outstring.pop(0) #remove the original command
+                outstring.pop(0) # remove parm
+                if OUTPUT_COMMENTS: out += linenumber() + "(toolchange ignored)\n"
+
+            # Spindle control
+            if command == 'M3' or command == 'M5':
+                outstring.pop(0) #remove the original command
+                speed = c.Parameters.get('S')
+                if speed:
+                    outstring.pop(0) # remove parm
+                    if OUTPUT_COMMENTS: out += "(set spindle speed)\n"
+                    out += linenumber() + "TR,%d,1\n" % (int(speed))
+
+                if command == 'M5':
+                    if OUTPUT_COMMENTS: out += "(turn spindle off)\n"
+                    out += linenumber() + "SO,1,0\n"
+                else:
+                    if OUTPUT_COMMENTS: out += "(turn spindle on)\n"
+                    out += linenumber() + "SO,1,1\n"
+                    out += linenumber() + "PAUSE 1\n" # Needed for Shopbot control software to wait reliably
 
             if command == "message":
                 if OUTPUT_COMMENTS is False:
