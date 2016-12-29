@@ -1,5 +1,7 @@
 # ***************************************************************************
-# *   (c) sliptonic (shopinthewoods@gmail.com) 2014                        *
+# * (c) Jon Nordby (jononor@gmail.com) 2016                                 *
+# * Based on linuxcnc_post.py by                                            *
+# * (c) sliptonic (shopinthewoods@gmail.com) 2014                           *
 # *                                                                         *
 # *   This file is part of the FreeCAD CAx development system.              *
 # *                                                                         *
@@ -25,16 +27,16 @@
 TOOLTIP='''
 This is a postprocessor file for the Path workbench. It is used to
 take a pseudo-gcode fragment outputted by a Path object, and output
-real GCode suitable for a linuxcnc 3 axis mill. This postprocessor, once placed
-in the appropriate PathScripts folder, can be used directly from inside
+real GCode suitable for a ShopBot PRS Alpha 3 axis mill.
+This postprocessor, once placed in the appropriate PathScripts folder, can be used directly from inside
 FreeCAD, via the GUI importer or via python scripts with:
 
-import linuxcnc_post
-linuxcnc_post.export(object,"/path/to/file.ncc","")
+import shopbotgcode_post
+shopbotgcode_post.export(object,"/path/to/file.ncc","")
 '''
 
 TOOLTIP_ARGS='''
-Arguments for linuxcnc:
+Arguments for shopbotgcode:
     --header,--no-header             ... output headers (--header)
     --comments,--no-comments         ... output comments (--comments)
     --line-numbers,--no-line-numbers ... prefix with line numbers (--no-lin-numbers)
@@ -57,7 +59,7 @@ LINENR = 100  # line number starting value
 
 # These globals will be reflected in the Machine configuration of the project
 UNITS = "G21"  # G21 for metric, G20 for us standard
-MACHINE_NAME = "LinuxCNC"
+MACHINE_NAME = "Shopbot PRS"
 CORNER_MIN = {'x': 0, 'y': 0, 'z': 0}
 CORNER_MAX = {'x': 500, 'y': 300, 'z': 300}
 
