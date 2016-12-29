@@ -69,7 +69,7 @@ PREAMBLE = '''G17 G90
 
 # Postamble text will appear following the last operation.
 POSTAMBLE = '''M05
-G00 X-1.0 Y1.0
+G00 X0.0 Y0.0
 G17 G90
 M2
 '''
