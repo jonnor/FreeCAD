@@ -64,13 +64,13 @@ CORNER_MIN = {'x': 0, 'y': 0, 'z': 0}
 CORNER_MAX = {'x': 500, 'y': 300, 'z': 300}
 
 # Preamble text will appear at the beginning of the GCODE output file.
-PREAMBLE = '''G17 G90
+PREAMBLE = '''G17 G91
 '''
 
 # Postamble text will appear following the last operation.
 POSTAMBLE = '''M05
 G00 X0.0 Y0.0
-G17 G90
+G17 G91
 M2
 '''
 
