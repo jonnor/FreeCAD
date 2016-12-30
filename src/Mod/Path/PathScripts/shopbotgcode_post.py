@@ -262,7 +262,7 @@ def parse(pathobj):
             if command == 'M3' or command == 'M5':
                 outstring.pop(0) #remove the original command
                 speed = c.Parameters.get('S')
-                if speed:
+                if speed and int(speed):
                     outstring.pop(0) # remove parm
                     if OUTPUT_COMMENTS: out += "(set spindle speed)\n"
                     out += linenumber() + "TR,%d,1\n" % (int(speed))
