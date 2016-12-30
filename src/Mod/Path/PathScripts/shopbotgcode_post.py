@@ -61,7 +61,7 @@ LINENR = 100  # line number starting value
 UNITS = "G21"  # G21 for metric, G20 for us standard
 MACHINE_NAME = "Shopbot PRS"
 CORNER_MIN = {'x': 0, 'y': 0, 'z': 0}
-CORNER_MAX = {'x': 500, 'y': 300, 'z': 300}
+CORNER_MAX = {'x': 2440, 'y': 1220, 'z': 200}
 
 # Preamble text will appear at the beginning of the GCODE output file.
 PREAMBLE = '''G17 G91
