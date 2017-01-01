@@ -1,5 +1,5 @@
 # ***************************************************************************
-# * (c) Jon Nordby (jononor@gmail.com) 2016                                 *
+# * (c) Jon Nordby (jononor@gmail.com) 2017                                 *
 # * Based on linuxcnc_post.py by                                            *
 # * (c) sliptonic (shopinthewoods@gmail.com) 2014                           *
 # *                                                                         *
@@ -27,7 +27,9 @@
 TOOLTIP='''
 This is a postprocessor file for the Path workbench. It is used to
 take a pseudo-gcode fragment outputted by a Path object, and output
-real GCode suitable for a ShopBot PRS Alpha 3 axis mill.
+real GCode suitable for a 3-axis CNC mill running Redeeem/Replicate with
+a spindle based on a brushless ESC.
+
 This postprocessor, once placed in the appropriate PathScripts folder, can be used directly from inside
 FreeCAD, via the GUI importer or via python scripts with:
 
@@ -59,9 +61,9 @@ LINENR = 100  # line number starting value
 
 # These globals will be reflected in the Machine configuration of the project
 UNITS = "G21"  # G21 for metric, G20 for us standard
-MACHINE_NAME = "Shopbot PRS"
+MACHINE_NAME = "Redeem"
 CORNER_MIN = {'x': 0, 'y': 0, 'z': 0}
-CORNER_MAX = {'x': 2440, 'y': 1220, 'z': 200}
+CORNER_MAX = {'x': 300, 'y': 300, 'z': 30}
 
 # Preamble text will appear at the beginning of the GCODE output file.
 PREAMBLE = '''G17 G91
@@ -265,15 +267,19 @@ def parse(pathobj):
                 if speed and int(speed):
                     outstring.pop(0) # remove parm
                     if OUTPUT_COMMENTS: out += "(set spindle speed)\n"
-                    out += linenumber() + "TR,%d,1\n" % (int(speed))
+                    out += linenumber() + "(spindle speed %d ignored)\n" % (int(speed))
 
                 if command == 'M5':
                     if OUTPUT_COMMENTS: out += "(turn spindle off)\n"
-                    out += linenumber() + "SO,1,0\n"
+                    out += linenumber() + "G4 S3\n" # avoid stopping while performing last motion command
+                    out += linenumber() + "M280 S-90 P0 F3000 R\n"
                 else:
                     if OUTPUT_COMMENTS: out += "(turn spindle on)\n"
-                    out += linenumber() + "SO,1,1\n"
-                    out += linenumber() + "PAUSE 1\n" # Needed for Shopbot control software to wait reliably
+                    # First signal to turn off, so that ESC can wake up
+                    out += linenumber() + "M280 S-90 P0 F3000 R\n"
+                    out += linenumber() + "G4 S1\n"
+                    out += linenumber() + "M280 S90 P0 F3000 R\n"
+                    out += linenumber() + "G4 S2\n" # Time to spin up
 
             if command == "message":
                 if OUTPUT_COMMENTS is False:
