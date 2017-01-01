@@ -206,7 +206,7 @@ def linenumber():
         return "N" + str(LINENR) + " "
     return ""
 
-def xyarc(args, state):
+def xyarc(command, args, state):
     # no native support in Reedeem, convert to linear line segments
     c = []
 
@@ -215,23 +215,26 @@ def xyarc(args, state):
     centerOffset = FreeCAD.Vector(float(args['I']), float(args['J']))
     center = lastPoint + centerOffset
     radius = (center - lastPoint).Length
-    xyNormal = FreeCAD.Vector(0, 0, 1)
+    direction = -1
+    xyNormal = FreeCAD.Vector(0, 0, direction)
     circle = Part.Circle(center, xyNormal, radius)
     p0 = circle.parameter(lastPoint)
     p1 = circle.parameter(newPoint)
-    arc = Part.ArcOfCircle(circle, p0, p1)
+    arc = Part.ArcOfCircle(circle, p1, p0)
     steps = 64 # TODO: specify max error instead
     points = arc.discretize(steps)
-    # TODO: consider direction
+    # TODO: consider G2/G3 direction?
     #print 'p = Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(%f, %f), FreeCAD.Vector(0, 0, 1), %f), %f, %f)' % (center.x, center.y, radius, p0, p1)
     for p in points:
         #print 'p', p.x, p.y
         cmd = "G1 X%.4f Y%.4f" % (p.x, p.y)
         c.append(cmd)
+    c = reversed(c)
          
     return c
 
-move_commands = ['G0', 'G1']
+# Commands which may change our position
+move_commands = ['G0', 'G1', 'G2', 'G3']
 
 def update_position(state, command, params):
     x = params.get('X')
@@ -278,9 +281,6 @@ def parse(pathobj):
             if command.startswith('G0'):
               command = command.replace('G0', 'G')
 
-            if command in move_commands:
-                update_position(state, command, c.Parameters)
-
             outstring.append(command)
             # if modal: only print the command if it is not the same as the
             # last one
@@ -315,9 +315,12 @@ def parse(pathobj):
 
                 if OUTPUT_COMMENTS: out += "(discretized arc start)\n"
                 if OUTPUT_COMMENTS: out += "(original: %s)\n" % ' '.join(removed)
-                discretized = xyarc(c.Parameters, state)
+                discretized = xyarc(command, c.Parameters, state)
                 out += '\n'.join(discretized) + '\n'
                 if OUTPUT_COMMENTS: out += "(discretized arc end)\n"
+
+            if command in move_commands:
+                update_position(state, command, c.Parameters)
 
             # Check for Tool Change:
             if command == 'M6':
