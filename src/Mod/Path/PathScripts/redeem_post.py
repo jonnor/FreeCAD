@@ -47,6 +47,8 @@ Arguments for shopbotgcode:
 
 import datetime
 from PathScripts import PostUtils
+import FreeCAD
+import Part
 
 now = datetime.datetime.now()
 
@@ -204,7 +206,47 @@ def linenumber():
         return "N" + str(LINENR) + " "
     return ""
 
+def xyarc(args, state):
+    # no native support in Reedeem, convert to linear line segments
+    c = []
+
+    lastPoint = FreeCAD.Vector(state['X'], state['Y'])
+    newPoint = FreeCAD.Vector(float(args['X']), float(args['Y']))
+    centerOffset = FreeCAD.Vector(float(args['I']), float(args['J']))
+    center = lastPoint + centerOffset
+    radius = (center - lastPoint).Length
+    xyNormal = FreeCAD.Vector(0, 0, 1)
+    circle = Part.Circle(center, xyNormal, radius)
+    p0 = circle.parameter(lastPoint)
+    p1 = circle.parameter(newPoint)
+    arc = Part.ArcOfCircle(circle, p0, p1)
+    steps = 64 # TODO: specify max error instead
+    points = arc.discretize(steps)
+    # TODO: consider direction
+    #print 'p = Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(%f, %f), FreeCAD.Vector(0, 0, 1), %f), %f, %f)' % (center.x, center.y, radius, p0, p1)
+    for p in points:
+        #print 'p', p.x, p.y
+        cmd = "G1 X%.4f Y%.4f" % (p.x, p.y)
+        c.append(cmd)
+         
+    return c
+
+move_commands = ['G0', 'G1']
+
+def update_position(state, command, params):
+    x = params.get('X')
+    y = params.get('Y')
+    z = params.get('Z')
+
+    if x is not None:
+        state['X'] = x
+    if y is not None:
+        state['Y'] = y
+    if z is not None:
+        state['Z'] = z
+
 def parse(pathobj):
+    state = {}
     out = ""
     lastcommand = None
 
@@ -228,14 +270,16 @@ def parse(pathobj):
         # if OUTPUT_COMMENTS:
         #     out += linenumber() + "(" + pathobj.Label + ")\n"
 
-        # TODO: discretize arcs
         for c in pathobj.Path.Commands:
             outstring = []
             command = c.Name
 
-            # Redeem only supports
+            # Redeem only supports Gx, not G0x format
             if command.startswith('G0'):
               command = command.replace('G0', 'G')
+
+            if command in move_commands:
+                update_position(state, command, c.Parameters)
 
             outstring.append(command)
             # if modal: only print the command if it is not the same as the
@@ -259,6 +303,21 @@ def parse(pathobj):
 
             # store the latest command
             lastcommand = command
+
+            # Discretize arcs
+            if command in ['G2', 'G3']:
+                removed = []
+                # remove original command and params
+                removed.append(outstring.pop(0))
+                for param in params:
+                    if param in c.Parameters:
+                        removed.append(outstring.pop(0))
+
+                if OUTPUT_COMMENTS: out += "(discretized arc start)\n"
+                if OUTPUT_COMMENTS: out += "(original: %s)\n" % ' '.join(removed)
+                discretized = xyarc(c.Parameters, state)
+                out += '\n'.join(discretized) + '\n'
+                if OUTPUT_COMMENTS: out += "(discretized arc end)\n"
 
             # Check for Tool Change:
             if command == 'M6':
