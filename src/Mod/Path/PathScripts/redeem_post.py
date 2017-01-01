@@ -228,9 +228,15 @@ def parse(pathobj):
         # if OUTPUT_COMMENTS:
         #     out += linenumber() + "(" + pathobj.Label + ")\n"
 
+        # TODO: discretize arcs
         for c in pathobj.Path.Commands:
             outstring = []
             command = c.Name
+
+            # Redeem only supports
+            if command.startswith('G0'):
+              command = command.replace('G0', 'G')
+
             outstring.append(command)
             # if modal: only print the command if it is not the same as the
             # last one
